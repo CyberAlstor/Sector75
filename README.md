@@ -1,8 +1,8 @@
 # Sector75 0.0.1-dev
 
-A personal C++ OpenGL game application from scratch. This is experimental and in very early development! More is to be done soon! But as for now, it only launches a window.
+A C++ OpenGL game application from scratch. This is experimental and in very early development! It currently renders an orange rectangle.
 
-NOTE: This project is being made exclusively on Linux. Windows support may come later when the game is more complete.
+NOTE: This project was made on Linux! Windows support is untested!
 
 ## Project Status
 
@@ -10,15 +10,19 @@ NOTE: This project is being made exclusively on Linux. Windows support may come 
 - [x] OpenGL 3.3 core profile context creation
 - [x] GLAD loader integration
 - [x] Framebuffer resize callback
-- [] TBD
+- [x] Draw a Traingle
+- [x] Draw a Square
+- [ ] TBD
 
-## Requirements
+## Requirements to Build Project
 
 - CMake >= 3.10
 - GCC or Clang with C++17 support
 - GLFW3 (development libraries)
 
-## Building the Game Source
+# Installing and Building Source:
+## Linux:
+### Building the Game Source
 
 ```bash
 cmake -S . -B build
@@ -26,7 +30,7 @@ cd build
 make -j$(nproc)
 ```
 
-## Running the Game
+### Running the Game
 
 ```bash
 ./Sector75
