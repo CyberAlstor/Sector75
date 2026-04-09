@@ -1,167 +1,248 @@
 #include "../include/glad/glad.h"
 #include <GLFW/glfw3.h>
-#include <cstddef>
 #include <iostream>
+#include <cmath>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processUserInput(GLFWwindow *window);
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
-/* SHADER SOURCE CODE*/
-const char *vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\0";
+// Vertex shader source
+const char* vertexShaderSource = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aColor;
 
-int main() {
+out vec3 ourColor;
 
-    /* Window Intialization */
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    ourColor = aColor;
+}
+)";
+
+// Fragment shader source
+const char* fragmentShaderSource = R"(
+#version 330 core
+out vec4 FragColor;
+in vec3 ourColor;
+
+void main()
+{
+    FragColor = vec4(ourColor, 1.0);
+}
+)";
+
+// Cube vertices and indices
+float vertices[] = {
+    // positions                        // colors
+    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 1.0f
+};
+
+// Simple 4x4 matrix math helpers
+void mat4_identity(float* m) {
+    for (int i = 0; i < 16; i++) m[i] = 0.0f;
+    m[0] = m[5] = m[10] = m[15] = 1.0f;
+}
+
+void mat4_perspective(float* m, float fov, float aspect, float near, float far) {
+    float f = 1.0f / tanf(fov / 2.0f);
+    for (int i = 0; i < 16; i++) m[i] = 0.0f;
+    m[0] = f / aspect;
+    m[5] = f;
+    m[10] = (far + near) / (near - far);
+    m[11] = -1.0f;
+    m[14] = (2.0f * far * near) / (near - far);
+}
+
+void mat4_translate(float* m, float x, float y, float z) {
+    mat4_identity(m);
+    m[12] = x;
+    m[13] = y;
+    m[14] = z;
+}
+
+void mat4_rotate_y(float* m, float angle) {
+    mat4_identity(m);
+    m[0] = cosf(angle);
+    m[2] = sinf(angle);
+    m[8] = -sinf(angle);
+    m[10] = cosf(angle);
+}
+
+void mat4_rotate_x(float* m, float angle) {
+    mat4_identity(m);
+    m[5] = cosf(angle);
+    m[6] = sinf(angle);
+    m[9] = -sinf(angle);
+    m[10] = cosf(angle);
+}
+
+void mat4_multiply(float* result, const float* a, const float* b) {
+    float temp[16];
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            temp[i * 4 + j] = 0;
+            for (int k = 0; k < 4; k++) {
+                temp[i * 4 + j] += a[k * 4 + j] * b[i * 4 + k];
+            }
+        }
+    }
+    for (int i = 0; i < 16; i++) result[i] = temp[i];
+}
+
+int main()
+{
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    /* Code for Windowed Fullscreen Mode. Work on it later! */
-    // GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    // const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-    // glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    // glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    // glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    // glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-    
-    // GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "My Title", monitor, NULL);
-
-    GLFWwindow* window = glfwCreateWindow(800, 800, "Sector75", NULL, NULL); // temperary for testing
-    if (!window) {
-        std::cout << "GLFW Window Creation: FAILED\n";
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Spinning Cube", NULL, NULL);
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
-
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "GLAD Initialization: FAILED\n";
-        glfwTerminate();
+        std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    glViewport(0, 0, 800, 800);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    
-    /* Currently Renders Traingle to screen */
-    // Initializes traingle vertices
+    // Compile vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // fragment shader
+
+    // Compile fragment shader
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // link shaders
+
+    // Link shaders
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
-
-    unsigned int VBO, VAO, EBO;
+    // Setup VAO, VBO
+    unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // color attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
-    glBindVertexArray(0);
+    glEnable(GL_DEPTH_TEST);
 
-    /* RENDERING LOOP */
-    while(!glfwWindowShouldClose(window))
+    // Get uniform locations
+    int modelLoc = glGetUniformLocation(shaderProgram, "model");
+    int viewLoc = glGetUniformLocation(shaderProgram, "view");
+    int projLoc = glGetUniformLocation(shaderProgram, "projection");
+
+    // View matrix (static)
+    float view[16];
+    mat4_translate(view, 0.0f, 0.0f, -3.0f);
+
+    // Projection matrix
+    float projection[16];
+    mat4_perspective(projection, 45.0f * 3.14159f / 180.0f, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+    // Render loop
+    while (!glfwWindowShouldClose(window))
     {
-        processUserInput(window);       
+        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // render a gray background
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw a traingle to the screen
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // swap buffers and poll IO events
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view);
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
+
+        // Create model matrix with rotation
+        float model[16];
+        float rotY[16], rotX[16], temp[16];
+        float time = (float)glfwGetTime();
+        mat4_rotate_y(rotY, time);
+        mat4_rotate_x(rotX, time * 0.7f);
+        mat4_multiply(temp, rotY, rotX);
+        mat4_identity(model);
+        mat4_multiply(model, temp, model);
+
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
         glfwSwapBuffers(window);
-        glfwPollEvents();    
+        glfwPollEvents();
     }
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
     return 0;
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void processUserInput(GLFWwindow *window)
-{
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
 }
