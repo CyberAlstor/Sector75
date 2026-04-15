@@ -10,7 +10,7 @@ NOTE ON AI USAGE: I will only be using AI for simple questions and explainations
 - [x] Get window to open.
 - [x] Render a triangle.
 - [x] Render a rectangle with an EBO.
-- [ ] Learn about and experiment with basic shaders with triangle.
+- [x] Multi-colored triangle.
 - [ ] TBD
 
 ## Requirements to Build Project
