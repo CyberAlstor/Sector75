@@ -1,7 +1,6 @@
 #include "../include/glad/glad.h"
 #include "../include/triangle_shader.h"
 #include <GLFW/glfw3.h>
-#include <cmath>
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -77,10 +76,10 @@ int main()
 
     // vertices for basic triangle
     float vertices[] = {
-        // vertices                        // colors in rgb format
-        0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,
-        -0.5f,   -0.5f, 0.0f,  0.0f,  1.0f, 0.0f,
-        0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f
+        // vert location (x,y,z) + rgb color (r,g,b)
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f
     };
 
     // Virtual Buffer OBject for the Triangle
